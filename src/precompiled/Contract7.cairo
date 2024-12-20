@@ -46,12 +46,12 @@ pub mod Contract7 {
         if x1 == x2 && y1 == y2 {
             let leftSide = (3 * safe_mul_mod(x1,x1) + a.into());
             let cs = 2 * *y1;
-            let rightSide = modular_inverse(@cs);
+            let rightSide = inv(@cs);
             lambda = safe_mul_mod(@leftSide, @rightSide) % r;
         } else {
             let (res1, _) = u256_overflow_sub(*y2,*y1);
             let (res2, _) = u256_overflow_sub(*x2,*x1);
-            let rs = modular_inverse(@res2);
+            let rs = inv(@res2);
             lambda = safe_mul_mod(@res1, @rs);
         }
         let (res1, _) = u256_overflow_sub(safe_mul_mod(@lambda, @lambda), *x1);
@@ -74,74 +74,33 @@ pub mod Contract7 {
         return res;
     }
 
-    fn extended_gcd(a: u256) -> (u256, u256, u256) {
-        let mut old_r = a;
-        let mut ra = r;
-        let mut old_s = 1_u256;
-        let mut s = 0_u256;
-        let mut old_t = 0_u256;
-        let mut t = 1_u256;
-    
-        while r != 0 {
-            let quotient = old_r / ra;
-    
-            // Update remainders
-            let new_r = old_r - quotient * ra;
-            old_r = ra;
-            ra = new_r;
-    
-            // Update s coefficients
-            let new_s = old_s - quotient * s;
-            old_s = s;
-            s = new_s;
-    
-            // Update t coefficients
-            let new_t = old_t - quotient * t;
-            old_t = t;
-            t = new_t;
+
+    // Modular Inverse Using Fermat's Little Theorem
+    fn inv(x: @u256) -> u256 {
+        let rs = r - 2;
+        return pow(x, @rs);
+    }
+
+
+    // modular pow
+    fn pow(base: @u256, exp: @u256) -> u256 {
+        let mut result = 1;
+
+        let mut current_base = *base % r;
+        let mut current_exp = *exp;
+        loop{
+
+            if current_exp % 2 == 1 {
+                result = safe_mul_mod(@result, @current_base);
+            }
+            current_base = safe_mul_mod(@current_base, @current_base);
+            current_exp = current_exp / 2;
+            println!("ce {current_exp}");
+            if(current_exp <= 0){
+                break;
+            }
         };
-    
-        return (old_r, old_s, old_t); // Returns gcd, x (modular inverse candidate), y
+
+        return result;
     }
-    
-    fn modular_inverse(a: @u256) -> u256 {
-        let (gcd, x, _) = extended_gcd(*a);
-    
-        // Modular inverse exists only if gcd == 1
-        if gcd != 1_u256 {
-            return 1;
-        }
-    
-        // x might be negative, so ensure it is positive in the modulus range
-        return (x % r + r) % r;
-    }
-    
-
-    // fn inv(x: @u256) -> u256 {
-    //     let rs = r - 2;
-    //     return pow(x, @rs);
-    // }
-
-
-    // // modular pow
-    // fn pow(base: @u256, exp: @u256) -> u256 {
-    //     let mut result = 1;
-
-    //     let mut current_base = *base % r;
-    //     let mut current_exp = *exp;
-    //     loop{
-
-    //         if current_exp % 2 == 1 {
-    //             result = safe_mul_mod(@result, @current_base);
-    //         }
-    //         current_base = safe_mul_mod(@current_base, @current_base);
-    //         current_exp = current_exp / 2;
-    //         println!("ce {current_exp}");
-    //         if(current_exp <= 0){
-    //             break;
-    //         }
-    //     };
-
-    //     return result;
-    // }
 }
